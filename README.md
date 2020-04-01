@@ -10,6 +10,12 @@
 * Remove associated route53 records on machine halt/destroy.
 
 ## Release notes
+#### 0.3.0
+
+- Allow to use a different AWS account for route53
+- Allow to use temporary security credentials
+- migrated to AWS SDK V3
+
 #### 0.2.3
 
 - Downgrade bundler version due to some dependencies problems.
