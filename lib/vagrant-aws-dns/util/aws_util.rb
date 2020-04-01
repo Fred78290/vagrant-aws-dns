@@ -1,4 +1,5 @@
-require 'aws-sdk'
+require 'aws-sdk-ec2'
+require 'aws-sdk-route53'
 
 
 module VagrantPlugins
