@@ -9,14 +9,29 @@ module VagrantPlugins
 
         attr_reader :ec2, :route53
 
-        def initialize(accesskey, secretkey, region)
-          credentials = Aws::Credentials.new(accesskey, secretkey)
+        def initialize(accesskey, secretkey, session_token, region, route53_accesskey, route53_secretkey, route53_session_token, route53_region)
+
+          credentials = nil
+
+          if session_token.nil? || session_token.length.zero?
+            credentials = Aws::Credentials.new(accesskey, secretkey)
+          else
+            credentials = Aws::Credentials.new(accesskey, secretkey, session_token)
+          end
+
           @ec2 = Aws::EC2::Client.new(
               region: region,
               credentials: credentials
           )
+
+          if route53_session_token.nil? || route53_session_token.length.zero?
+            credentials = Aws::Credentials.new(route53_accesskey, route53_secretkey)
+          else
+            credentials = Aws::Credentials.new(route53_accesskey, route53_secretkey, route53_session_token)
+          end
+
           @route53 = Aws::Route53::Client.new(
-              region: region,
+              region: route53_region,
               credentials: credentials
           )
         end
