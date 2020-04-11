@@ -7,9 +7,11 @@ module VagrantPlugins
     module Util
       class AwsUtil
 
-        attr_reader :ec2, :route53
+        attr_reader :ec2, :route53, :logger
 
         def initialize(accesskey, secretkey, session_token, region, route53_accesskey, route53_secretkey, route53_session_token, route53_region)
+
+          @logger = Log4r::Logger.new("vagrant::plugins::vagrant-aws-dns::action::util")
 
           credentials = nil
 
@@ -37,15 +39,27 @@ module VagrantPlugins
         end
 
         def get_public_ip(instance_id)
-          @ec2.describe_instances({instance_ids: [instance_id]}).reservations[0].instances[0].public_ip_address
+          begin
+            @ec2.describe_instances({instance_ids: [instance_id]}).reservations[0].instances[0].public_ip_address
+          rescue RuntimeError => e
+            @logger.error e.message
+          end
         end
 
         def get_private_ip(instance_id)
-          @ec2.describe_instances({instance_ids: [instance_id]}).reservations[0].instances[0].private_ip_address
+          begin
+            @ec2.describe_instances({instance_ids: [instance_id]}).reservations[0].instances[0].private_ip_address
+          rescue RuntimeError => e
+            @logger.error e.message
+          end
         end
 
         def is_private_zone(hosted_zone_id)
-	  @route53.get_hosted_zone({id: '/hostedzone/' + hosted_zone_id}).hosted_zone.config.private_zone
+          begin
+            @route53.get_hosted_zone({id: '/hostedzone/' + hosted_zone_id}).hosted_zone.config.private_zone
+          rescue RuntimeError => e
+            @logger.error e.message
+          end
         end
 
         def add_record(hosted_zone_id, record, type, value)
@@ -59,26 +73,30 @@ module VagrantPlugins
         private
 
         def change_record(hosted_zone_id, record, type, value, action='CREATE')
-          @route53.change_resource_record_sets({
-            hosted_zone_id: hosted_zone_id, # required
-              change_batch: {
-                changes: [
-                  {
-                    action: action, # required, accepts CREATE, DELETE, UPSERT
-                    resource_record_set: {
-                      name: record, # required
-                      type: type, # required, accepts SOA, A, TXT, NS, CNAME, MX, PTR, SRV, SPF, AAAA
-                      ttl: 1,
-                      resource_records: [
-                        {
-                          value: value # required
-                        }
-                      ]
+          begin
+            @route53.change_resource_record_sets({
+              hosted_zone_id: hosted_zone_id, # required
+                change_batch: {
+                  changes: [
+                    {
+                      action: action, # required, accepts CREATE, DELETE, UPSERT
+                      resource_record_set: {
+                        name: record, # required
+                        type: type, # required, accepts SOA, A, TXT, NS, CNAME, MX, PTR, SRV, SPF, AAAA
+                        ttl: 1,
+                        resource_records: [
+                          {
+                            value: value # required
+                          }
+                        ]
+                      }
                     }
-                  }
-                ]
-              }
-          })
+                  ]
+                }
+            })
+          rescue RuntimeError => e
+            @logger.error e.message
+          end
         end
       end
     end
